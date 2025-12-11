@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost N' Found App</title>
+   
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>  
+    <link rel="stylesheet" href="style.css"> 
+
+    <script src="app.js"></script>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script>
+    window.fbAsyncInit = function() {
+        FB.init({
+            appId      : 'YOUR_FACEBOOK_APP_ID', 
+            cookie     : true,
+            xfbml      : true,
+            version    : 'v18.0' 
+        });
+    };
+    (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = "https://connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+</script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="app-container" class="w-full max-w-sm h-[800px] bg-white shadow-2xl rounded-[3rem] overflow-hidden relative border-8 border-gray-900">
+
+        <div class="h-10 bg-gray-900 flex items-center justify-between px-6 text-white text-sm">
+            <span>9:41</span>
+            <div class="flex items-center space-x-1">
+                <i data-lucide="signal-high" class="w-4 h-4"></i>
+                <i data-lucide="wifi" class="w-4 h-4"></i>
+                <div class="border border-white rounded-md w-5 h-2.5 flex items-center justify-end p-[1px]">
+                    <div class="bg-white w-3 h-1.5 rounded-[2px]"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="views-container" class="relative h-[calc(100%-40px-64px)] overflow-y-auto custom-scrollbar">
+
+            <template id="item-card-template">
+                <div class="item-card bg-white rounded-xl shadow-sm p-4 flex space-x-4 border-l-4 border-blue-500 hover:shadow-lg transition duration-150 cursor-pointer" 
+                    data-item-id="" onclick="app.showItemDetails(this.dataset.itemId)">
+                    
+                    <div class="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center item-image-container">
+                        <i data-lucide="image" class="w-8 h-8 text-gray-400"></i>
+                        <img src="" alt="Item Image" class="w-full h-full object-cover hidden">
+                    </div>
+                    
+                    <div class="flex-grow min-w-0">
+                        <h3 class="font-bold text-lg truncate item-name">Item Name Placeholder</h3>
+                        <p class="text-sm text-gray-600 item-location truncate">Location Lost/Found</p>
+                        <p class="text-xs font-semibold item-type"></p>
+                    </div>
+                    
+                    <div class="flex-shrink-0 flex flex-col justify-between items-end">
+                        <p class="text-xs text-gray-400 item-posted-at">time ago</p>
+                        <i data-lucide="check-circle" class="w-5 h-5 text-green-500 item-claimed-icon hidden" title="Item Recovered"></i>
+                        <i data-lucide="message-circle" class="w-5 h-5 text-gray-500 hover:text-blue-600 cursor-pointer item-chat-btn" title="Message User"></i>
+                    </div>
+                </div>
+            </template>
+            <div id="splash" class="view h-full flex flex-col items-center justify-center text-center p-8 active-view">
+                <div class="bg-blue-600 rounded-full p-6 mb-6">
+                    <i data-lucide="search" class="w-16 h-16 text-white"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">LOST N' FOUND APP</h1>
+                <p class="text-gray-500">Connecting lost items with their owners.</p>
+            </div>
+
+            <div id="get-started" class="view hidden-view h-full flex flex-col items-center justify-center text-center p-8">
+                <h2 class="text-2xl font-semibold mb-8">Get started</h2>
+                <p class="text-gray-500 mb-8">Start with Sign up or Sign In</p>
+                <button onclick="app.showView('signup')" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-700 transition duration-150 mb-4">Sign up</button>
+                <button onclick="app.showView('signin')" class="w-full py-3 border border-blue-600 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition duration-150">Sign In</button>
+            </div>
+
+            <div id="signup" class="view hidden-view p-6 pt-12">
+                <h2 class="text-3xl font-bold text-blue-600 mb-2">Sign up</h2>
+                <p class="text-gray-500 mb-8">Hello! Let's join with us</p>
+                <form id="signup-form" class="space-y-6">
+                    <div>
+                        <label for="signup-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                        <input type="text" id="signup-name" name="name" placeholder="Your Full Name" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="signup-email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="signup-email" name="email" placeholder="example@gmail.com" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label for="signup-password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <div class="relative mt-1">
+                            <input type="password" id="signup-password" name="password" placeholder="Password" required class="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 pr-10">
+                            <i 
+                                data-lucide="eye-off" 
+                                id="toggle-signup-password" 
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 cursor-pointer hover:text-gray-600"
+                                onclick="app.togglePasswordVisibility('signup-password', 'toggle-signup-password')"
+                            ></i>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-700 transition duration-150">Sign up</button>
+                </form>
+                <div class="flex items-center my-6">
+                    <hr class="flex-grow border-gray-200">
+                    <span class="px-3 text-sm text-gray-400 font-medium">OR CONTINUE WITH</span>
+                    <hr class="flex-grow border-gray-200">
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button onclick="app.socialSignUp('google')" class="w-1/2 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl shadow-sm hover:bg-gray-100 transition duration-150 flex items-center justify-center">
+                        <i data-lucide="mail" class="w-5 h-5 mr-2 text-red-500"></i>
+                        Google
+                    </button>
+                    
+                    <button onclick="app.socialSignUp('facebook')" class="w-1/2 py-3 bg-blue-700 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-800 transition duration-150 flex items-center justify-center">
+                        <i data-lucide="facebook" class="w-5 h-5 mr-2"></i>
+                        Facebook
+                    </button>
+                </div>
+                <p class="text-center text-sm text-gray-500 mt-6">Already have an account? <a href="#" onclick="app.showView('signin')" class="text-blue-600 font-semibold">Sign In</a></p>
+            </div>
+
+            <div id="signin" class="view hidden-view p-6 pt-12">
+                <h2 class="text-3xl font-bold text-blue-600 mb-2">Sign In</h2>
+                <p class="text-gray-500 mb-8">Welcome Back</p>
+                <form id="signin-form" class="space-y-6">
+                    <div>
+                        <label for="signin-email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="signin-email" name="email" placeholder="example@gmail.com" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="signin-password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <div class="relative mt-1">
+                            <input type="password" id="signin-password" name="password" placeholder="Password" required class="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 pr-10">
+                            <i 
+                                data-lucide="eye-off" 
+                                id="toggle-signin-password" 
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 cursor-pointer hover:text-gray-600"
+                                onclick="app.togglePasswordVisibility('signin-password', 'toggle-signin-password')"
+                            ></i>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-700 transition duration-150">Sign In</button>
+                </form>
+                
+                <div class="flex items-center my-6">
+                    <hr class="flex-grow border-gray-200">
+                    <span class="px-3 text-sm text-gray-400 font-medium">OR CONTINUE WITH</span>
+                    <hr class="flex-grow border-gray-200">
+                </div>
+                <div class="flex space-x-4">
+                    <button onclick="app.socialSignIn('google')" class="w-1/2 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl shadow-sm hover:bg-gray-100 transition duration-150 flex items-center justify-center">
+                        <i data-lucide="mail" class="w-5 h-5 mr-2 text-red-500"></i>
+                        Google
+                    </button>
+                    
+                    <button onclick="app.socialSignIn('facebook')" class="w-1/2 py-3 bg-blue-700 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-800 transition duration-150 flex items-center justify-center">
+                        <i data-lucide="facebook" class="w-5 h-5 mr-2"></i>
+                        Facebook
+                    </button>
+                </div>
+                <p class="text-center text-sm text-gray-500 mt-6">Don't have an account? <a href="#" onclick="app.showView('signup')" class="text-blue-600 font-semibold">Sign Up</a></p>
+            </div>
+
+            <div id="welcome" class="view hidden-view h-full flex flex-col items-center justify-center text-center p-8">
+                <i data-lucide="party-popper" class="w-16 h-16 text-yellow-500 mb-4"></i>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Welcome!</h2>
+                <p id="welcome-message" class="text-xl text-gray-600 mb-8">User Name</p>
+                <button onclick="app.showDashboard('all')" class="w-full max-w-xs py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-700 transition duration-150">Start Tracking</button>
+            </div>
+
+            <div id="dashboard" class="view hidden-view p-4 pt-1">
+                
+                <div class="sticky top-0 bg-white z-10 py-4 flex justify-between items-center px-0 border-b border-gray-100">
+                    <h1 id="dashboard-title" class="text-2xl font-bold text-gray-800">ALL ITEMS</h1>
+                    
+                    <div class="flex items-center space-x-4">
+                        <i 
+                            data-lucide="bell" 
+                            id="notification-icon"
+                            class="w-6 h-6 text-gray-500 cursor-pointer relative" 
+                            onclick="app.showView('notifications')">
+                            <div id="notification-badge" class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white hidden"></div>
+                        </i>
+                        
+                        <i data-lucide="search" class="w-6 h-6 text-gray-500 cursor-pointer" onclick="app.showView('search')"></i>
+                    </div>
+                </div>
+                
+                <div id="feed-container" class="space-y-8 pb-4"> 
+                    
+                    <h2 class="text-xl font-bold text-gray-800 border-l-4 border-blue-500 pl-2 pt-4">Active Lost & Found (<span id="active-count">0</span>)</h2>
+                    
+                    <div id="active-posts-list" class="space-y-4">
+                        <div class="text-center text-gray-500 mt-4 p-4 border rounded-xl" id="no-active-posts">
+                            <p>No new active posts currently available.</p>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-200 mt-6 mb-2">
+                    
+                    <h2 class="text-xl font-bold text-gray-800 border-l-4 border-green-500 pl-2">RECOVERED ITEMS (<span id="claimed-count">0</span>)</h2>
+
+                    <div id="claimed-list" class="space-y-4">
+                        <div class="text-center text-gray-500 mt-4 p-4 border rounded-xl" id="no-claimed-posts">
+                            <p>No recently claimed items to display.</p>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <div id="post-item" class="view hidden-view p-6 pt-12">
+                <h2 class="text-3xl font-bold text-blue-600 mb-4">Post New Item</h2>
+                <form id="post-item-form" enctype="multipart/form-data" class="space-y-4">
+                    
+                    <select id="type" name="type" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <option value="Lost">I Lost This Item</option>
+                        <option value="Found">I Found This Item</option>
+                    </select>
+                    
+                    <input type="text" id="item_name" name="item_name" placeholder="Item Name (e.g., iPhone 16)" required class="w-full p-3 border border-gray-300 rounded-xl">
+                    
+                    <textarea id="description" name="description" placeholder="Detailed Description..." rows="3" required class="w-full p-3 border border-gray-300 rounded-xl"></textarea>
+                    
+                    <div class="flex space-x-2">
+                        <input type="text" id="location" name="location" placeholder="Location Lost/Found" required class="w-1/2 p-3 border border-gray-300 rounded-xl">
+                        <input type="date" id="date" name="date" required class="w-1/2 p-3 border border-gray-300 rounded-xl">
+                    </div>
+
+                    <select id="category" name="category" class="w-full p-3 border border-gray-300 rounded-xl">
+                        <option value="Electronics">Electronics</option>
+                        <option value="Personal">Personal Items (Wallet, Keys)</option>
+                        <option value="Clothing">Clothing</option>
+                        <option value="Documents">Documents</option>
+                        <option value="General">General</option>
+                    </select> 
+                    
+                    <div>
+                        <label for="item-image" class="block text-sm font-medium text-gray-700 pt-2">Item Image (Required for upload)</label>
+                        <input type="file" id="item-image" name="item_image" accept="image/*" class="w-full p-3 border border-gray-300 rounded-xl">
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 bg-green-600 text-white font-semibold rounded-xl shadow-lg hover:bg-green-700 transition duration-150">Submit Post</button>
+                </form>
+            </div> 
+
+            <div id="item-details" class="view hidden-view p-6 pt-12">
+                <button onclick="app.showDashboard('all')" class="absolute top-4 left-4 p-2 text-gray-600 z-10">
+                    <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                </button>
+                
+                <h2 id="details-title" class="text-2xl font-bold text-blue-600 mb-4">Item Details</h2>
+                
+                <div id="details-image-container" class="w-full h-48 bg-gray-200 rounded-xl overflow-hidden mb-4 flex items-center justify-center">
+                    <i data-lucide="image" class="w-12 h-12 text-gray-400"></i>
+                    </div>
+
+                <form id="edit-item-form" class="space-y-4">
+                    
+                    <input type="hidden" id="edit-item-id" name="item_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Status</label>
+                        <select id="edit-type" name="type" class="w-full p-3 border border-gray-300 rounded-xl" disabled>
+                            <option value="Lost">Lost</option>
+                            <option value="Found">Found</option>
+                            <option value="Claimed">Claimed</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Item Name</label>
+                        <input type="text" id="edit-item-name" name="item_name" placeholder="Item Name" required class="w-full p-3 border border-gray-300 rounded-xl" disabled>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea id="edit-description" name="description" placeholder="Detailed Description..." rows="3" required class="w-full p-3 border border-gray-300 rounded-xl" disabled></textarea>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <div class="w-1/2">
+                            <label class="block text-sm font-medium text-gray-700">Location</label>
+                            <input type="text" id="edit-location" name="location" placeholder="Location Lost/Found" required class="w-full p-3 border border-gray-300 rounded-xl" disabled>
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-sm font-medium text-gray-700">Date</label>
+                            <input type="date" id="edit-date" name="date" required class="w-full p-3 border border-gray-300 rounded-xl" disabled>
+                        </div>
+                    </div> 
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Category</label>
+                        <select id="edit-category" name="category" class="w-full p-3 border border-gray-300 rounded-xl" disabled>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Personal">Personal Items (Wallet, Keys)</option>
+                            <option value="Clothing">Clothing</option>
+                            <option value="Documents">Documents</option>
+                            <option value="General">General</option>
+                        </select> 
+                    </div>
+
+                    <div class="pt-2">
+                        <p class="text-sm text-gray-500 flex items-center">
+                            <i data-lucide="user" class="w-4 h-4 mr-2"></i>
+                            Posted by: <span id="details-posted-by" class="font-semibold ml-1 text-gray-700"></span>
+                        </p>
+                    </div>
+                    
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" id="edit-mode-btn" onclick="app.toggleEditMode(true)" class="w-1/2 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-700 transition duration-150">
+                            <i data-lucide="edit" class="w-5 h-5 inline-block mr-1"></i> Edit Item
+                        </button>
+                        
+                        <button type="submit" id="save-edit-btn" class="w-1/2 py-3 bg-green-600 text-white font-semibold rounded-xl shadow-lg hover:bg-green-700 transition duration-150 hidden">
+                            <i data-lucide="save" class="w-5 h-5 inline-block mr-1"></i> Save Changes
+                        </button>
+                        <button type="button" id="cancel-edit-btn" onclick="app.toggleEditMode(false)" class="w-1/2 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-100 transition duration-150 hidden">
+                            Cancel
+                        </button>
+                        
+                        <button type="button" 
+                            id="claim-item-btn" 
+                            onclick="app.claimItem(app.state.currentItem.item_id)" 
+                            class="w-full py-3 bg-green-600 text-white font-semibold rounded-xl shadow-lg hover:bg-green-700 transition duration-150 hidden">
+                            <i data-lucide="check-circle" class="w-5 h-5 inline-block mr-1"></i> Mark as Claimed
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="notifications" class="view hidden-view p-6 pt-12">
+                <button onclick="app.showDashboard('all', true)" class="absolute top-4 left-4 p-2 text-gray-600 z-10">
+                    <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                </button>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">Notifications</h2>
+
+                <div id="notifications-list" class="space-y-3">
+                    <div id="no-notifications-message" class="text-center text-gray-500 mt-10 p-4">
+                        <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2"></i>
+                        <p>You have no new notifications.</p>
+                    </div>
+                    </div>
+            </div>
+            
+            <div id="chat-list" class="view hidden-view p-4 pt-16 bg-gray-50 min-h-full">
+                
+                <div class="fixed-view-header bg-white shadow-md p-4 flex items-center">
+                    <button onclick="app.showView('menu')" class="mr-3 text-gray-600">
+                        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                    </button>
+                    <h2 class="text-xl font-bold text-gray-800">My Conversations</h2>
+                </div>
+                
+                <div id="chat-list-container" class="mt-4 space-y-3"> 
+                    <p class="text-center text-gray-500 pt-10">You have no active conversations yet. Find an item to message a poster!</p>
+                </div>
+            </div>
+
+            <div id="chat-view" class="view hidden-view flex flex-col h-full bg-gray-50">
+                <div class="fixed-view-header bg-white shadow-md p-4 flex items-center">
+                    <button onclick="app.showChatList()" class="mr-3 text-gray-600">
+                        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                    </button>
+                    <h2 id="chat-header-name" class="text-lg font-semibold text-gray-800 truncate">Chat with User (Item: WALLET...)</h2>
+                </div>
+
+                <div id="chat-history" class="flex-grow overflow-y-auto space-y-4 p-4 pt-20 pb-20 custom-scrollbar flex flex-col">
+                    <p class="text-center text-gray-500 pt-10 w-full">Start the conversation!</p>
+                </div>
+
+                <div id="chat-input-area" class="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-sm bg-white p-4 shadow-2xl flex space-x-2 flex-shrink-0">
+                    <input 
+                        type="text" 
+                        id="chat-message-input" 
+                        placeholder="Type your message here..." 
+                        class="flex-grow p-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button id="send-message-btn" onclick="app.handleSendMessage()" class="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition duration-150" type="button">
+                        <i data-lucide="send" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="menu" class="view hidden-view p-4 pt-12 bg-gray-50 min-h-screen">
+                <button onclick="app.showDashboard('all', true)" class="absolute top-4 left-4 p-2 text-gray-600 z-10">
+                    <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                </button>
+                
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">My Menu</h2>
+
+                <div class="space-y-3">
+                    <button class="w-full text-left bg-white p-4 rounded-xl shadow-md flex items-center justify-between hover:bg-gray-100" onclick="app.showChatList()">
+                        <div class="flex items-center">
+                            <i data-lucide="message-square" class="w-6 h-6 mr-3 text-blue-600"></i>
+                            <span class="text-lg font-medium text-gray-700">My Chats & Messages</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                    </button>
+                    
+                    <button class="w-full text-left bg-white p-4 rounded-xl shadow-md flex items-center justify-between hover:bg-gray-100" onclick="app.showView('my-posts')">
+                        <div class="flex items-center">
+                            <i data-lucide="folder-check" class="w-6 h-6 mr-3 text-green-600"></i>
+                            <span class="text-lg font-medium text-gray-700">My Posted Items</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                    </button>
+
+                    <button class="w-full text-left bg-white p-4 rounded-xl shadow-md flex items-center justify-between hover:bg-gray-100" onclick="app.showView('profile')">
+                        <div class="flex items-center">
+                            <i data-lucide="user" class="w-6 h-6 mr-3 text-blue-600"></i>
+                            <span class="text-lg font-medium text-gray-700">Profile & Account / Settings</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                    </button>
+
+                    <button class="w-full text-left bg-red-500 text-white p-4 rounded-xl shadow-md mt-8 hover:bg-red-600" onclick="app.signOut()">
+                        <i data-lucide="log-out" class="w-5 h-5 inline-block mr-2"></i>
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+
+            <div id="profile" class="view hidden-view p-6 pt-12">
+                <button onclick="app.showView('menu', true)" class="absolute top-4 left-4 p-2 text-gray-600 z-10"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <h2 class="text-xl font-bold mb-6">Your Profile</h2>
+
+                <div class="text-center mb-6">
+                    <div class="w-24 h-24 rounded-full mx-auto mb-2 border-4 border-blue-500 bg-blue-100 flex items-center justify-center">
+                        <span id="profile-initial" class="text-4xl font-bold text-blue-600">U</span>
+                    </div>
+                    <p id="profile-name" class="font-semibold text-lg">User Name</p>
+                    <p id="profile-email" class="text-sm text-gray-500">user@example.com</p>
+                </div> 
+
+                <form id="profile-form" class="space-y-4">
+                    <input type="text" id="profile-name-edit" name="full_name" placeholder="Full Name" required class="w-full p-3 border border-gray-300 rounded-xl">
+                    
+                    <div class="relative">
+                        <input type="password" id="profile-password-current" name="current_password" placeholder="Current Password (for verification)" class="w-full p-3 border border-gray-300 rounded-xl pr-10">
+                        <i 
+                            data-lucide="eye-off" 
+                            id="toggle-profile-current-password" 
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 cursor-pointer hover:text-gray-600"
+                            onclick="app.togglePasswordVisibility('profile-password-current', 'toggle-profile-current-password')"
+                        ></i>
+                    </div>
+                    
+                    <div class="relative">
+                        <input type="password" id="profile-password-new" name="new_password" placeholder="New Password (Leave blank to keep current)" class="w-full p-3 border border-gray-300 rounded-xl pr-10">
+                        <i 
+                            data-lucide="eye-off" 
+                            id="toggle-profile-new-password" 
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 cursor-pointer hover:text-gray-600"
+                            onclick="app.togglePasswordVisibility('profile-password-new', 'toggle-profile-new-password')"
+                        ></i>
+                    </div>
+                    
+                    <input type="text" id="profile-phone" name="phone_number" placeholder="Phone Number (Optional)" class="w-full p-3 border border-gray-300 rounded-xl">
+                    
+                    <button type="submit" class="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-700 transition duration-150">Save Changes</button>
+                </form>
+            </div>
+            
+            <div id="search" class="view hidden-view p-4 pt-12">
+                <button onclick="app.showDashboard('all', true)" class="absolute top-4 left-4 p-2 text-gray-600 z-10"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <h2 class="text-xl font-bold mb-4">Search Lost & Found</h2>
+                <div class="relative mb-4">
+                    <input type="text" id="search-input" onkeyup="app.handleSearch()" placeholder="Search item name or description..." class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <i data-lucide="search" class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div id="search-results-container" class="space-y-4">
+                    <p class="text-center text-gray-500 mt-10">Type to search for lost or found items.</p>
+                </div>
+            </div>
+            
+            <div id="my-posts" class="view hidden-view p-4 pt-12">
+                <button onclick="app.showView('menu', true)" class="absolute top-4 left-4 p-2 text-gray-600 z-10"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">My Posted Items</h2>
+                <div id="my-posts-list" class="space-y-4">
+                    <p class="text-center text-gray-500 mt-10">Loading your posts...</p>
+                </div>
+            </div>
+
+        </div>
+        
+        <div id="navbar" class="h-16 bg-white border-t border-gray-200 flex justify-around items-center text-gray-500 hidden">
+            
+            <button onclick="app.showDashboard('all', this)" class="nav-tab flex flex-col items-center p-2 hover:text-blue-600 transition duration-150 active-nav-tab" data-type="all">
+                <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+                <span class="text-xs">Home</span>
+            </button>
+
+            <button onclick="app.showDashboard('Lost', this)" class="nav-tab flex flex-col items-center p-2 hover:text-blue-600 transition duration-150" data-type="Lost">
+                <i data-lucide="frown" class="w-6 h-6"></i>
+                <span class="text-xs">Lost</span>
+            </button>
+
+            <button onclick="app.showView('post-item')" class="p-3 bg-blue-600 text-white rounded-full shadow-xl -translate-y-2 hover:bg-blue-700 transition duration-150">
+                <i data-lucide="plus" class="w-8 h-8"></i>
+                <span class="sr-only">Post Item</span>
+            </button>
+
+            <button onclick="app.showDashboard('Found', this)" class="nav-tab flex flex-col items-center p-2 hover:text-blue-600 transition duration-150" data-type="Found">
+                <i data-lucide="smile" class="w-6 h-6"></i>
+                <span class="text-xs">Found</span>
+            </button>
+
+            <button onclick="app.showView('menu')" class="nav-tab flex flex-col items-center p-2 hover:text-blue-600 transition duration-150" data-type="menu">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+                <span class="text-xs">Menu</span>
+            </button>
+
+        </div>
+        
+        <div id="message-box" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+            <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-xs text-center">
+                <p id="message-text" class="text-gray-700 font-medium mb-4"></p>
+                <button onclick="document.getElementById('message-box').classList.add('hidden'); document.getElementById('message-box').classList.remove('flex')" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CRITICAL: Initialize Lucide icons on load
+        lucide.createIcons();
+    </script>
+    <script src="app.js"></script> 
+
+</body>
+</html>
